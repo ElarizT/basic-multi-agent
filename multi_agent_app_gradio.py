@@ -6,7 +6,7 @@ from utils import generate_system_prompt
 # Load environment variables from .env file
 load_dotenv()
 
-# Define model constants - moved from groq_utils.py for simplicity
+# Define model constants
 GENERAL_CHATBOT_MODEL = "qwen-2.5-32b"
 PROOFREADING_MODEL = "deepseek-r1-distill-llama-70b"
 REASONING_MODEL = "deepseek-r1-distill-qwen-32b"
