@@ -286,8 +286,11 @@ def generate_pdf(markdown_text: str, title: str) -> bytes:
         pdf.multi_cell(0, 6, processed)
         pdf.ln(2)
     out = pdf.output(dest="S")
+    # Normalize to bytes for Streamlit download_button
     if isinstance(out, str):
         out = out.encode("latin1", errors="ignore")
+    elif isinstance(out, bytearray):
+        out = bytes(out)
     return out
 
 
