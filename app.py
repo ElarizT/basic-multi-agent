@@ -11,9 +11,7 @@ from duckduckgo_search import DDGS
 import requests
 import google.generativeai as genai
 from openai import OpenAI
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.lib.units import inch
+from fpdf import FPDF
 
 
 # ===== Environment =====
@@ -182,37 +180,23 @@ Research Brief (Markdown with [n] citations):
 
 # ===== PDF generation =====
 def generate_pdf(markdown_text: str, title: str) -> bytes:
-    # Simple plaintext PDF rendering with basic wrapping
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
-    margin = 0.8 * inch
-    y = height - margin
-
-    # Title
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(margin, y, title[:90])
-    y -= 0.35 * inch
-    c.setFont("Helvetica", 10)
-    c.drawString(margin, y, f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M')}" )
-    y -= 0.3 * inch
-
-    c.setFont("Times-Roman", 12)
-    max_width = width - 2 * margin
+    # Simple plaintext PDF rendering with basic wrapping using fpdf2
+    pdf = FPDF(format="Letter")
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.multi_cell(0, 10, title)
+    pdf.ln(2)
+    pdf.set_font("Helvetica", size=10)
+    pdf.cell(0, 8, f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=1)
+    pdf.ln(2)
+    pdf.set_font("Times", size=12)
     for para in markdown_text.split("\n\n"):
         for line in textwrap.wrap(para, width=110):
-            if y < margin + 0.8 * inch:
-                c.showPage()
-                y = height - margin
-                c.setFont("Times-Roman", 12)
-            c.drawString(margin, y, line)
-            y -= 14
-        y -= 10
-
-    c.showPage()
-    c.save()
-    buffer.seek(0)
-    return buffer.getvalue()
+            pdf.multi_cell(0, 6, line)
+        pdf.ln(2)
+    out = pdf.output(dest="S").encode("latin1", errors="ignore")
+    return out
 
 
 # ===== Streamlit UI =====
