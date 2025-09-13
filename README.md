@@ -1,50 +1,30 @@
-# Basic Multi-Agent
+# Basic Multi-Agent (Research Paper Agent)
 
-A multi-agent Python application providing several AI-powered assistants for different tasks, built with Gradio. This project is intended for educational and prototype purposes.
+A unified research pipeline that performs: web research (Gemini 2.5 Flash) → reasoning synthesis (DeepSeek V3.1 via OpenRouter) → proofreading (Gemini 2.5 Flash) → PDF export. Built with Streamlit.
 
 ## Features
 
-### 1. General Chatbot
-- Powered by Qwen 2.5 (32B)
-- Engages in general conversation and answers questions across a wide range of topics
-- Example queries:
-  - "Tell me about quantum computing"
-  - "What's the difference between machine learning and deep learning?"
-  - "Can you help me understand how blockchain works?"
-
-### 2. Proofreader
-- Uses Deepseek-R1 Distill Llama (70B)
-- Upload or paste text to receive grammar, spelling, style, and clarity feedback
-- Provides overall assessment and suggested corrections
-- Example text:
-  - "I'm planing to go too the store tomorrow to buy some grocerys..."
-  - "The CEO made a statement saying that the company have been doing well..."
-
-### 3. Reasoning Assistant
-- Uses Deepseek-R1 Distill Qwen (32B)
-- Specialized for complex scientific reasoning (math, physics, etc.)
-- Step-by-step solutions for problems, including calculus
-- Example queries:
-  - "If a ball is thrown upward with an initial velocity of 20 m/s, how high will it go?"
-  - "Prove that the sum of the first n odd numbers equals n²"
-  - "What is the derivative of ln(x²+1) with respect to x?"
-
-### 4. Equation Solver & Calculus Tools
-- Solve equations symbolically given a variable (e.g., `x^2 - 5*x + 6 = 0`)
-- Calculate derivatives, integrals, and limits for mathematical expressions
+### Flow
+1) Web research: searches the web and fetches top sources
+2) Research brief: Gemini 2.5 Flash synthesizes a factual brief with inline citations [n]
+3) Reasoning: DeepSeek V3.1 (via OpenRouter) drafts a rigorous research paper in Markdown, keeping [n] markers
+4) Proofreading: Gemini 2.5 Flash polishes the draft while preserving structure and citations
+5) Export: Download the final paper as a PDF
 
 ## Models Used
 
-- **Qwen 2.5 (32B)** — General chatbot with broad conversational knowledge
-- **Deepseek-R1 Distill Llama (70B)** — Advanced language model for proofreading and text analysis
-- **Deepseek-R1 Distill Qwen (32B)** — Scientific reasoning assistant for step-by-step problem solving
+- **Gemini 2.5 Flash** — Research and proofreading (Google AI Studio)
+- **DeepSeek V3.1** — Reasoning/synthesis via OpenRouter
 
 ## Requirements
 
 - Python 3.8+
-- [Gradio](https://gradio.app/) for the UI
-- Groq API key (add to `.env` as `GROQ_API_KEY=your_api_key_here`)
-- Model dependencies as specified in `requirements.txt`
+- [Streamlit](https://streamlit.io/)
+- API Keys:
+  - `GEMINI_API_KEY` from Google AI Studio
+  - `OPENROUTER_API_KEY` from openrouter.ai
+- Optional overrides: `GEMINI_MODEL` (default `gemini-2.5-flash`), `DEEPSEEK_MODEL` (default `deepseek/deepseek-chat-v3.1:free`)
+- Model dependencies in `requirements.txt`
 
 ## Usage
 
@@ -57,23 +37,33 @@ A multi-agent Python application providing several AI-powered assistants for dif
     ```bash
     pip install -r requirements.txt
     ```
-3. Set up your `.env` file with the Groq API key:
-    ```
-    GROQ_API_KEY=your_api_key_here
-    ```
+3. Create `.env` with keys:
+  ```
+  GEMINI_API_KEY=your_google_ai_studio_key
+  OPENROUTER_API_KEY=your_openrouter_key
+  # Optional
+  # GEMINI_MODEL=gemini-2.5-flash
+  # DEEPSEEK_MODEL=deepseek/deepseek-chat-v3.1:free
+  # OPENROUTER_SITE_URL=https://your-site
+  # OPENROUTER_SITE_TITLE=YourSiteTitle
+  ```
 4. Run the application:
-    ```bash
-    python multi_agent_app_gradio.py
-    ```
-5. Access the Gradio web interface as instructed in the terminal.
+  ```bash
+  streamlit run app.py
+  ```
+5. Streamlit will open in your browser (or print a local URL in the terminal).
 
 ## File Support
 
-- Proofreader supports `.txt`, `.pdf`, `.docx`, and `.doc` files.
+- The app performs web research; you provide a topic (and optional custom search query). No file upload needed.
 
 ## License
 
 This project is private and intended for educational or prototype use.
+
+---
+
+Note: The legacy Gradio app (`multi_agent_app_gradio.py`) is kept for reference but is no longer the primary entry point.
 
 ## Author
 
