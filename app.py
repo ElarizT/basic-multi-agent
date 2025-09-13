@@ -269,11 +269,25 @@ def generate_pdf(markdown_text: str, title: str) -> bytes:
     pdf.cell(0, 8, f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=1)
     pdf.ln(2)
     pdf.set_font(*body_font)
+    
+    def break_long_tokens(s: str, max_len: int = 80) -> str:
+        # Insert breakpoints in very long non-space sequences (e.g., URLs)
+        out_lines = []
+        for token in s.split(" "):
+            if len(token) > max_len:
+                chunks = [token[i:i+max_len] for i in range(0, len(token), max_len)]
+                out_lines.append(" ".join(chunks))
+            else:
+                out_lines.append(token)
+        return " ".join(out_lines)
+
     for para in body_text.split("\n\n"):
-        for line in textwrap.wrap(para, width=110):
-            pdf.multi_cell(0, 6, line)
+        processed = break_long_tokens(para, max_len=80)
+        pdf.multi_cell(0, 6, processed)
         pdf.ln(2)
-    out = pdf.output(dest="S").encode("latin1", errors="ignore")
+    out = pdf.output(dest="S")
+    if isinstance(out, str):
+        out = out.encode("latin1", errors="ignore")
     return out
 
 
