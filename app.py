@@ -179,19 +179,97 @@ Research Brief (Markdown with [n] citations):
 
 
 # ===== PDF generation =====
+def _ensure_unicode_fonts() -> Optional[dict]:
+    """Ensure Unicode TTF fonts are available locally; download if missing.
+
+    Returns a dict with paths for 'regular' and 'bold' if successful; otherwise None.
+    """
+    try:
+        import os
+        import pathlib
+        import requests
+
+        fonts_dir = os.path.join(os.path.dirname(__file__), "fonts")
+        pathlib.Path(fonts_dir).mkdir(parents=True, exist_ok=True)
+
+        dejavu_regular = os.path.join(fonts_dir, "DejaVuSans.ttf")
+        dejavu_bold = os.path.join(fonts_dir, "DejaVuSans-Bold.ttf")
+
+        url_regular = "https://github.com/dejavu-fonts/dejavu-fonts/raw/version_2_37/ttf/DejaVuSans.ttf"
+        url_bold = "https://github.com/dejavu-fonts/dejavu-fonts/raw/version_2_37/ttf/DejaVuSans-Bold.ttf"
+
+        def download_if_missing(path: str, url: str):
+            if not os.path.exists(path):
+                r = requests.get(url, timeout=20)
+                r.raise_for_status()
+                with open(path, "wb") as f:
+                    f.write(r.content)
+
+        download_if_missing(dejavu_regular, url_regular)
+        download_if_missing(dejavu_bold, url_bold)
+        return {"regular": dejavu_regular, "bold": dejavu_bold}
+    except Exception:
+        return None
+
+
+def _ascii_fallback(text: str) -> str:
+    # Replace common Unicode punctuation with ASCII fallbacks
+    replacements = {
+        "—": "-",
+        "–": "-",
+        "“": '"',
+        "”": '"',
+        "‘": "'",
+        "’": "'",
+        "…": "...",
+        "•": "*",
+        "→": "->",
+        "←": "<-",
+        "×": "x",
+        "≥": ">=",
+        "≤": "<=",
+        "±": "+/-",
+        "®": "(R)",
+        "©": "(C)",
+        "™": "(TM)",
+    }
+    for k, v in replacements.items():
+        text = text.replace(k, v)
+    return text
+
+
 def generate_pdf(markdown_text: str, title: str) -> bytes:
-    # Simple plaintext PDF rendering with basic wrapping using fpdf2
+    # Unicode-capable PDF rendering using fpdf2 and DejaVu fonts
     pdf = FPDF(format="Letter")
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.set_font("Helvetica", "B", 16)
-    pdf.multi_cell(0, 10, title)
+
+    fonts = _ensure_unicode_fonts()
+    if fonts:
+        # Register Unicode fonts
+        pdf.add_font("DejaVu", "", fonts["regular"], uni=True)
+        pdf.add_font("DejaVu", "B", fonts["bold"], uni=True)
+        title_text = title
+        body_text = markdown_text
+        header_font = ("DejaVu", "B", 16)
+        meta_font = ("DejaVu", "", 10)
+        body_font = ("DejaVu", "", 12)
+    else:
+        # Fallback to core fonts with ASCII-only replacement
+        title_text = _ascii_fallback(title)
+        body_text = _ascii_fallback(markdown_text)
+        header_font = ("Helvetica", "B", 16)
+        meta_font = ("Helvetica", "", 10)
+        body_font = ("Times", "", 12)
+
+    pdf.set_font(*header_font)
+    pdf.multi_cell(0, 10, title_text)
     pdf.ln(2)
-    pdf.set_font("Helvetica", size=10)
+    pdf.set_font(*meta_font)
     pdf.cell(0, 8, f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=1)
     pdf.ln(2)
-    pdf.set_font("Times", size=12)
-    for para in markdown_text.split("\n\n"):
+    pdf.set_font(*body_font)
+    for para in body_text.split("\n\n"):
         for line in textwrap.wrap(para, width=110):
             pdf.multi_cell(0, 6, line)
         pdf.ln(2)
